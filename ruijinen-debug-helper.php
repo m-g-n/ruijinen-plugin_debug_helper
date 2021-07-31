@@ -114,3 +114,36 @@ add_action(
 		endif;
 	}
 );
+
+/**
+ * パラメータがある場合はSnow Monkey Editorのアニメーションclassを削除
+ */
+add_action(
+	'wp_footer',
+	function(){
+			?>
+<script>
+	document.addEventListener('DOMContentLoaded', function() {
+		const key    = 'sme_animation';
+		const url    = new URL(location);
+		const smeAnimationClasses = [
+			"sme-animation-bounce-in",
+			"sme-animation-bounce-down",
+			"sme-animation-fade-in",
+			"sme-animation-fade-in-up",
+			"sme-animation-fade-in-down"
+		];
+		//指定のパラメータがある場合はアニメーションを止める
+		if ( 'stop' === url.searchParams.get( key ) ) {
+			smeAnimationClasses.forEach(function ( classname ) {
+				let elements = document.getElementsByClassName(classname);
+				while ( 0 < elements.length ) {
+					elements[0].classList.remove(classname);
+				}
+			});
+		}
+	});
+</script>
+			<? 
+	}
+);
