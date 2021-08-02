@@ -2,7 +2,7 @@
 /**
  * Plugin name: 類人猿デバッグサポート
  * Description: 類人猿パターンプラグインのデバッグをサポートする機能を搭載
- * Version: 0.0.0.1
+ * Version: 0.0.0.3
  *
  * @package ruijinen-debug-helper
  * @author mgn
@@ -141,6 +141,15 @@ add_action(
 					elements[0].classList.remove(classname);
 				}
 			});
+			console.log('Stoped Snow Monkey Editor Animations.');
+		}
+	});
+	document.addEventListener('load', function() {
+		const key    = 'sme_animation';
+		const url    = new URL(location);
+		//指定のパラメータがある場合はアニメーションを止める
+		if ( 'stop' === url.searchParams.get( key ) ) {
+			console.log('Stoped Snow Monkey Editor Animations.');
 		}
 	});
 </script>
