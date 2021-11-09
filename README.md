@@ -9,6 +9,8 @@
 - 各機能は管理者権限のみ使えます
 
 # 変更履歴
+## 0.0.0.3
+-  URLにパラメータ「sme_animation=stop」がある場合には最後に「Stoped Snow Monkey Editor Animations.」をconsole.logに表示するように修正
 ## 0.0.0.2
 - URLにパラメータ「sme_animation=stop」がある場合はSnow Monkey Editorのアニメーションを実行しないようにする機能を追加
 ## 0.0.0.1
