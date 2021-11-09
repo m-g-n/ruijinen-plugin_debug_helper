@@ -2,7 +2,7 @@
 /**
  * Plugin name: 類人猿デバッグサポート
  * Description: 類人猿パターンプラグインのデバッグをサポートする機能を搭載
- * Version: 0.0.0.3
+ * Version: 0.0.0.4
  *
  * @package ruijinen-debug-helper
  * @author mgn
