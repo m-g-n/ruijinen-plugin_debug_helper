@@ -20,8 +20,16 @@ if ( 'snow-monkey' !== $theme->template && 'snow-monkey/resources' !== $theme->t
 /**
  * 定数を宣言
  */
-define( 'RJE_DH_PLUGIN_URL', plugins_url( '', __FILE__ ) ); // このプラグインのURL
-define( 'RJE_DH_PLUGIN_PATH', plugin_dir_path( __FILE__ ) ); // このプラグインのパス
+define( 'RJE_DH_PLUGIN_KEY', 'RJE_Debug_Helper' ); // このプラグインのユニークキー
+define( 'RJE_DH_PLUGIN_URL', untrailingslashit( plugins_url( '', __FILE__ ) ) . '/' ); // このプラグインのURL
+define( 'RJE_DH_PLUGIN_PATH', untrailingslashit( plugin_dir_path( __FILE__ ) ) . '/' ); // このプラグインのパス
+
+/**
+ * inc 読み込み
+ */
+require_once(RJE_DH_PLUGIN_PATH . 'inc/assets.php');
+require_once(RJE_DH_PLUGIN_PATH . 'inc/record_hook.php'); //かかったhookを記録し、メールで送信するデバッグ用の関数
+require_once(RJE_DH_PLUGIN_PATH . 'inc/print_filter_for.php'); //指定のフックにかかった関数名をerror_logに出力するための関数
 
 
 /**
@@ -156,3 +164,19 @@ add_action(
 			<? 
 	}
 );
+
+
+//通ったフックの記録
+// $wrh = new WpRecordHook();
+// $wrh->setRegex('/^rje/');
+
+//フィルターフックの関数チェック
+// add_action(
+// 	'wp_loaded',
+// 	function(){
+// 		$filter_hook_name = 'rje_register_patterns_args';
+// 		print_filters_for( $filter_hook_name );
+// 	}
+// );
+
+
