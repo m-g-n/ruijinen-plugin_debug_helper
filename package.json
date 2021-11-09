@@ -1,6 +1,6 @@
 {
-  "name": "ruijinen-block-patterns-r002-corp",
-  "version": "0.0.0.1",
+  "name": "ruijinen-debug-helper",
+  "version": "0.0.0.4",
   "description": "",
   "main": "index.js",
   "scripts": {
