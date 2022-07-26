@@ -1,0 +1,24 @@
+{
+  "core": "https://ja.wordpress.org/latest-ja.zip",
+  "plugins": [
+    ".",
+    "https://downloads.wordpress.org/plugin/query-monitor.zip",
+    "https://downloads.wordpress.org/plugin/snow-monkey-blocks.zip",
+    "https://downloads.wordpress.org/plugin/snow-monkey-editor.zip",
+    "https://downloads.wordpress.org/plugin/wordpress-beta-tester.zip",
+    "https://downloads.wordpress.org/plugin/duplicate-post.zip"
+  ],
+	"port": 1061,
+  "env": {
+    "tests": {
+      "port": 1062
+    }
+  },
+  "config": {
+    "WP_DEBUG": true
+  },
+  "mappings": {
+    ".export": "./.export",
+    "php.ini": "./.export/php.ini"
+  }
+}
