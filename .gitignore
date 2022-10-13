@@ -8,6 +8,8 @@ node_modules/
 ## dist file
 dist/css/
 dist/js/
+## Debug
+App/Debug/error_log
 
 ## wp-env
 /.export/wp-content/

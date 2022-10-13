@@ -2,7 +2,7 @@
 /**
  * Plugin name: 類人猿デバッグサポート
  * Description: 類人猿パターンプラグインのデバッグをサポートする機能を搭載
- * Version: 0.0.2
+ * Version: 0.0.3
  *
  * @package ruijinen-debug-helper
  * @author mgn
@@ -34,12 +34,6 @@ require_once(RJE_DH_PLUGIN_PATH . 'vendor/autoload.php'); //アップデート�
 foreach (glob(RJE_DH_PLUGIN_PATH.'App/**/*.php') as $filename) {
 	require_once $filename;
 }
-
-/**
- * inc 読み込み
- */
-// require_once(RJE_DH_PLUGIN_PATH . 'inc/record_hook.php'); //かかったhookを記録し、メールで送信するデバッグ用の関数
-// require_once(RJE_DH_PLUGIN_PATH . 'inc/print_filter_for.php'); //指定のフックにかかった関数名をerror_logに出力するための関数
 
 /**
  * 初期設定.
