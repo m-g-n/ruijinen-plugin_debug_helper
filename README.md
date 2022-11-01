@@ -6,11 +6,11 @@
 通常はphpのエラーログはサーバーの設定で決められたファイルに出力されますが、それだと自分が知りたいログだけ見るなどができないため（特にwp-env環境だと追いにくい）任意のファイルに出力するためのクラスを用意しています
 
 ```
-$data = '出力したい内容';
-$reset = false; //ファイルを空にしてから出力するか（デフォルトは false）
-$file = 'hogehoge/fugafuga/error_log.txt'; //出力ファイルのパス（デフォルトは {このプラグインのディレクトリ}/App/Debug/error_log）
+$rje_log = new \Ruijinen\DebugHelper\Debug\Output_error_log(); //エラーログ出力用のclassを宣言
+$rje_log->file = __DIR__ . '/fugahoge/.error_log'; //任意：出力ファイルのパス（デフォルトは {このプラグインのディレクトリ}/App/Debug/error_log）
+$rje_log->reset = true; //任意：ファイルを空にしてから出力するか（デフォルトは false）
+$rje_log->output_error_log({出力したい内容}); //以降はこのメソッドで呼び出し何度も可能
 
-new \Ruijinen\DebugHelper\Debug\Output_error_log($data, $reset, $file);
 ```
 
 ### 指定のフック名にどんな関数・メソッドがかけられているかリスト表示する機能
@@ -61,6 +61,9 @@ $debug->error_log_list_filter('{フック名}');
 
 
 # 変更履歴
+## 0.0.5
+- error_log出力機能の一部修正（メソッド化と一部引数をプロパティに変更）
+- Snow Monkeyかどうかの判定が間違ってたので修正
 ## 0.0.4
 - README.mdファイルに機能説明を追加
 - 汎用的なデバッグ機能についてはSnow Monkeyテーマなくても動くように全体的なアクティベートチェックを削除
