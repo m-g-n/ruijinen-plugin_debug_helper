@@ -2,7 +2,7 @@
 /**
  * Plugin name: 類人猿デバッグサポート
  * Description: 類人猿パターンプラグインのデバッグをサポートする機能を搭載
- * Version: 0.0.4
+ * Version: 0.0.5
  *
  * @package ruijinen-debug-helper
  * @author mgn
@@ -59,7 +59,7 @@ class Bootstrap {
 
 		//Snow Monkeyテーマが有効かチェックし、有効の場合のみSnow Monkey用のデバッグ関数を読み込む
 		$theme = wp_get_theme( get_template() );
-		if ( 'snow-monkey' != $theme->template && 'snow-monkey/resources' != $theme->template ) {
+		if ( 'snow-monkey' == $theme->template || 'snow-monkey/resources' == $theme->template ) {
 			new Debug\SnowMonkey();
 		}
 	}
