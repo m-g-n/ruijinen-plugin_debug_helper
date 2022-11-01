@@ -45,10 +45,10 @@ class ViewListFilterFromHook {
 	 *
 	 * @param $hook_name 出力したいフック名
 	 */
-	public function error_log_list_filter( $hook_name = '', $reset = false ) {
+	public function error_log_list_filter( $hook_name = '', $reset = false, $file = '' ) {
 		add_action (
 			'wp_footer',
-			function() use ( $hook_name, $reset ) {
+			function() use ( $hook_name, $reset, $file ) {
 				$lists = $this->get_filer_list( $hook_name );
 				if ( !$lists )
 					return;
@@ -59,7 +59,12 @@ class ViewListFilterFromHook {
 					}
 				}
 				$output .= '**** ここまで ****'."\n";
-				new Output_error_log( $output, $reset);
+				$output_error_log = new Output_error_log();
+				if ( $file )
+					$output_error_log->file = $file;
+				if ( $reset )
+					$output_error_log->reset = $reset;
+				$output_error_log->output_error_log($hook_name);
 			}
 		);
 	}
