@@ -24,7 +24,8 @@ $rje_log->output_error_log({出力したい内容}); //以降はこのメソッ�
 
 ```
 $debug = new \Ruijinen\DebugHelper\Debug\ViewListFilterFromHook();
-$debug->error_log_list_filter('{フック名}');
+$debug->error_log_list_filter('{フック名}', {ファイルリセットするかtrue or false}, {出力ファイルのパス});
+//ex. $debug->error_log_list_filter('wp_head', true, __DIR__ . '/.error_log.txt');
 ```
 ### スペーサーブロックの可視化
 編集画面にてCoreのスペーサーブロックを可視化します
@@ -61,6 +62,9 @@ $debug->error_log_list_filter('{フック名}');
 
 
 # 変更履歴
+## 0.0.7
+- 指定フック名の関数一覧出力リスト機能の修正
+
 ## 0.0.6
 - 指定フック名の関数一覧出力リスト機能の修正
 
