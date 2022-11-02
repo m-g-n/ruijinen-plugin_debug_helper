@@ -64,7 +64,7 @@ class ViewListFilterFromHook {
 					$output_error_log->file = $file;
 				if ( $reset )
 					$output_error_log->reset = $reset;
-				$output_error_log->output_error_log($hook_name);
+				$output_error_log->output_error_log($output);
 			}
 		);
 	}
