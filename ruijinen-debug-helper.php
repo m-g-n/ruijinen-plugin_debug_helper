@@ -2,7 +2,7 @@
 /**
  * Plugin name: 類人猿デバッグサポート
  * Description: 類人猿パターンプラグインのデバッグをサポートする機能を搭載
- * Version: 0.0.8
+ * Version: 0.0.9
  *
  * @package ruijinen-debug-helper
  * @author mgn
@@ -52,6 +52,7 @@ class Bootstrap {
 	public function bootstrap() {
 		//初期実行
 		new App\Setup\AutoUpdate(); //自動更新確認
+		new App\Setup\InPluginUpdateMessage(); //更新アラートメッセージに追加でメッセージを表示
 
 		//汎用的なデバッグ用のクラス定義
 		$debug_common = new Debug\ViewListFilterFromHook();

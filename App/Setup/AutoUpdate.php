@@ -32,7 +32,7 @@ class AutoUpdate {
 		new Updater(
 			RJE_DH_PLUGIN_BASENAME,
 			'm-g-n',
-			'ruijinen-debug-helper',
+			'ruijinen-plugin_debug_helper',
 			[
 				'description_url' => 'https://rui-jin-en.com/',
 				'faq_url' => 'https://rui-jin-en.com/help/',
