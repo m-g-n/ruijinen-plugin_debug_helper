@@ -6,27 +6,58 @@ on:
       - dev
     types: [closed]
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   create-release-pr:
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'main') == false
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
+      #プラグインのルートファイルからバージョン番号を取得
       - name: Get Version
         id: get_version
-        uses: bbonkr/get-version-action@v1.0.1
-        with:
-          project: "./version.json"
+        run: |
+          version=$(sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*//p' ruijinen-debug-helper.php | head -n 1 | tr -d '[:space:]')
+          if ! [[ "$version" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "::error file=ruijinen-debug-helper.php::Version ヘッダーからバージョン番号を取得できませんでした（取得値: '${version}'）"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
 
+      #devにあってmainにないマージ済みPRを変更内容として列挙し、リリース用PRを作成・更新
       - name: Create a release pull request
-        uses: bakunyo/git-pr-release-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_PR_RELEASE_BRANCH_PRODUCTION: main
-          GIT_PR_RELEASE_BRANCH_STAGING: dev
-          GIT_PR_RELEASE_LABELS: release
-          PKG_VERSION: ${{ steps.get_version.outputs.version}}
-          GIT_PR_RELEASE_TEMPLATE: .github/git-pr-release/.git-pr-release-template
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.get_version.outputs.version }}
+        run: |
+          body_file="$(mktemp)"
+          echo "## 変更内容" > "$body_file"
+
+          pr_numbers=$(git log origin/main..origin/dev --merges --reverse --pretty=format:%s \
+            | sed -n 's/^Merge pull request #\([0-9][0-9]*\).*/\1/p')
+          for number in $pr_numbers; do
+            # mainからdevへの同期PRは除外
+            head_ref=$(gh pr view "$number" --json headRefName --jq .headRefName)
+            if [ "$head_ref" = "main" ]; then
+              continue
+            fi
+            gh pr view "$number" --json number,title --jq '"- #\(.number) \(.title)"' >> "$body_file"
+          done
+
+          if [ "$(wc -l < "$body_file")" -eq 1 ]; then
+            echo "- なし" >> "$body_file"
+          fi
+
+          existing=$(gh pr list --base main --head dev --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --title "$VERSION" --body-file "$body_file"
+          else
+            gh pr create --base main --head dev --title "$VERSION" --body-file "$body_file" --label release
+          fi
