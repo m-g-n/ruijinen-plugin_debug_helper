@@ -15,20 +15,41 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      #プラグインのルートファイルからバージョン番号を取得し、同じバージョンのリリースが既にあればスキップ
+      - name: Get Version
+        id: get_version
+        run: |
+          version=$(sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*//p' ruijinen-debug-helper.php | head -n 1 | tr -d '[:space:]')
+          if ! [[ "$version" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "::error file=ruijinen-debug-helper.php::Version ヘッダーからバージョン番号を取得できませんでした（取得値: '${version}'）"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          if [ -n "$(git ls-remote --tags origin "refs/tags/${version}")" ]; then
+            echo "::notice::バージョン ${version} はリリース済みのため、リリース作成をスキップします"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       #nodeのセットアップ
       - name: Setup Node.js
+        if: steps.get_version.outputs.skip == 'false'
         uses: actions/setup-node@v7
         with:
           node-version: 24
 
       #npmでのscriptの実施
       - name: Install Dependencies
+        if: steps.get_version.outputs.skip == 'false'
         run: npm ci
       - name: scss build
+        if: steps.get_version.outputs.skip == 'false'
         run: npm run build
 
       #composerの実施
       - name: Composer install
+        if: steps.get_version.outputs.skip == 'false'
         uses: docker://composer:1.9.1
         with:
           args: install
@@ -36,18 +57,20 @@ jobs:
       # release作成
       - name: Create Release
         id: create_release
+        if: steps.get_version.outputs.skip == 'false'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.event.pull_request.title }}
-          release_name: ${{ github.event.pull_request.title }}
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: ${{ steps.get_version.outputs.version }}
           body: ${{ github.event.pull_request.body }}
           draft: false
           prerelease: false
 
       # release用のzip作成 https://github.com/marketplace/actions/zip-release
       - name: Zip Release
+        if: steps.get_version.outputs.skip == 'false'
         uses: TheDoctor0/zip-release@0.4.1
         with:
           filename: 'ruijinen-debug-helper.zip' # ファイル名
@@ -59,6 +82,7 @@ jobs:
       # releaseにzipファイルを添付
       - name: Upload Release Asset
         id: upload-release-asset
+        if: steps.get_version.outputs.skip == 'false'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
