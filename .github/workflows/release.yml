@@ -15,9 +15,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      #nodeのセットアップ（バージョンは mise.toml を参照）
+      #nodeのセットアップ
       - name: Setup Node.js
-        uses: jdx/mise-action@v5
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
 
       #npmでのscriptの実施
       - name: Install Dependencies
