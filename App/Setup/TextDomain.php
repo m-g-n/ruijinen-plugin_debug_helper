@@ -1,19 +1,25 @@
 <?php
 /**
- * @package ruijinen-skin-r001-corp
+ * テキストドメインの読み込み
+ *
+ * @package ruijinen-debug-helper
  * @author mgn
  * @license GPL-2.0+
  */
 
 namespace Ruijinen\DebugHelper\App\Setup;
 
-class TextDomain{
+/**
+ * テキストドメインの読み込み
+ */
+class TextDomain {
+
 	/**
 	 * Constructor.
 	 */
 	public function __construct() {
-		load_plugin_textdomain( RJE_DH_PLUGIN_TEXTDOMAIN, false, RJE_DH_PLUGIN_PATH . '/languages' );
-		add_filter( 'load_textdomain_mofile', [ $this, 'load_textdomain_mofile' ], 10, 2 );
+		load_plugin_textdomain( RJE_DH_PLUGIN_TEXTDOMAIN, false, RJE_DH_PLUGIN_DIRNAME . '/languages' );
+		add_filter( 'load_textdomain_mofile', array( $this, 'load_textdomain_mofile' ), 10, 2 );
 	}
 
 	/**
@@ -25,8 +31,7 @@ class TextDomain{
 	 */
 	public function load_textdomain_mofile( $mofile, $domain ) {
 		if ( RJE_DH_PLUGIN_TEXTDOMAIN === $domain ) {
-			$mofilename   = basename( $mofile );
-			$local_mofile = RJE_DH_PLUGIN_PATH . '/languages/' . $mofilename;
+			$local_mofile = RJE_DH_PLUGIN_PATH . 'languages/' . basename( $mofile );
 			if ( file_exists( $local_mofile ) ) {
 				return $local_mofile;
 			}
