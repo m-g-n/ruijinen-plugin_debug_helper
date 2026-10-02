@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -47,57 +51,48 @@ jobs:
         if: steps.get_version.outputs.skip == 'false'
         run: npm run build
 
-      #composerの実施
+      #composerの実施（配布用のため開発用パッケージは含めない）
       - name: Composer install
         if: steps.get_version.outputs.skip == 'false'
-        uses: docker://composer:1.9.1
+        uses: docker://composer:2
         with:
-          args: install
+          args: install --no-dev --no-interaction --optimize-autoloader
 
-      # release作成
-      - name: Create Release
-        id: create_release
-        if: steps.get_version.outputs.skip == 'false'
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.get_version.outputs.version }}
-          release_name: ${{ steps.get_version.outputs.version }}
-          body: ${{ github.event.pull_request.body }}
-          draft: false
-          prerelease: false
-
-      # release用のzip作成 https://github.com/marketplace/actions/zip-release
+      # release用のzip作成（プラグインの動作に必要なファイルのみ含める）
       - name: Zip Release
         if: steps.get_version.outputs.skip == 'false'
-        uses: TheDoctor0/zip-release@0.4.1
-        with:
-          filename: 'ruijinen-debug-helper.zip' # ファイル名
-          exclusions: '*.git* /*node_modules/* .editorconfig /*src/*scss/*' # 除外設定
-          directory: '.'
-          path: '.'
-          type: 'zip'
+        run: zip -r ruijinen-debug-helper.zip ruijinen-debug-helper.php README.md App dist vendor -x 'App/Debug/error_log'
 
-      # releaseにzipファイルを添付
-      - name: Upload Release Asset
-        id: upload-release-asset
+      # release作成とzipファイルの添付
+      - name: Create Release
         if: steps.get_version.outputs.skip == 'false'
-        uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./ruijinen-debug-helper.zip
-          asset_name: ruijinen-debug-helper.zip
-          asset_content_type: application/zip
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.get_version.outputs.version }}
+          RELEASE_NOTES: ${{ github.event.pull_request.body }}
+        run: |
+          notes_file="$(mktemp)"
+          printf '%s\n' "$RELEASE_NOTES" > "$notes_file"
+          gh release create "$VERSION" ruijinen-debug-helper.zip \
+            --title "$VERSION" \
+            --notes-file "$notes_file" \
+            --target "$GITHUB_SHA"
 
-      # mainからdevにPR生成
-      - name: create-pull-request
-        uses: repo-sync/pull-request@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          destination_branch: 'dev'
-          pr_title: "リリース残処理：mainの内容をdevへ反映"
-          pr_body: "Pulling main into dev"
-          pr_allow_empty: true
+      # mainからdevにPR生成（同期用のPRが既にある場合は作成しない）
+      - name: Create a pull request from main to dev
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh pr list --base dev --head main --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "::notice::mainからdevへのPR #${existing} が既にあるため作成をスキップします"
+            exit 0
+          fi
+          ahead_by=$(gh api "repos/${GITHUB_REPOSITORY}/compare/dev...main" --jq .ahead_by)
+          if [ "$ahead_by" = "0" ]; then
+            echo "::notice::mainにdevへ反映するコミットがないため作成をスキップします"
+            exit 0
+          fi
+          gh pr create --base dev --head main \
+            --title "リリース残処理：mainの内容をdevへ反映" \
+            --body "Pulling main into dev"
