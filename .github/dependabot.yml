@@ -1,0 +1,43 @@
+# Dependabot version updates
+# 依存パッケージを月1回まとめて更新し、更新が溜まらないようにする。
+# https://docs.github.com/ja/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+version: 2
+
+updates:
+  # Node.js（SCSSビルド・wp-env・BackstopJS などの開発用パッケージ）
+  - package-ecosystem: npm
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: monthly
+    # 公開直後のバージョンは不具合や改ざんのリスクがあるため、一定期間待ってから更新する
+    cooldown:
+      default-days: 7
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
+
+  # Composer（配布zipに含まれる自動更新ライブラリ）
+  - package-ecosystem: composer
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      composer-dependencies:
+        patterns:
+          - "*"
+
+  # GitHub Actions（ワークフローで使うアクション）
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
