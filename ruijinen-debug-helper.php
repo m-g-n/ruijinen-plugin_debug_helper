@@ -2,7 +2,7 @@
 /**
  * Plugin name: 類人猿デバッグサポート
  * Description: 類人猿パターンプラグインのデバッグをサポートする機能を搭載
- * Version: 0.0.9
+ * Version: 0.0.10
  * Requires PHP: 7.4
  * Text Domain: ruijinen-debug-helper
  *
