@@ -15,7 +15,8 @@
     }
   },
   "config": {
-    "WP_DEBUG": true
+    "WP_DEBUG": true,
+    "WP_AUTO_UPDATE_CORE": false
   },
   "mappings": {
     ".export": "./.export",

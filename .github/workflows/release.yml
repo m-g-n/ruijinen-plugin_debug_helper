@@ -6,88 +6,93 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true
-    #nodeのバージョン設定 参考 https://docs.github.com/ja/free-pro-team@latest/actions/guides/building-and-testing-nodejs
-    strategy:
-      matrix:
-        node-version: [14.x]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@master
+        uses: actions/checkout@v7
 
-      #yarnのキャッシュ https://qiita.com/motoy3d/items/ead1eb1eec311f159c9a
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-      - uses: actions/cache@v2
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+      #プラグインのルートファイルからバージョン番号を取得し、同じバージョンのリリースが既にあればスキップ
+      - name: Get Version
+        id: get_version
+        run: |
+          version=$(sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*//p' ruijinen-debug-helper.php | head -n 1 | tr -d '[:space:]')
+          if ! [[ "$version" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "::error file=ruijinen-debug-helper.php::Version ヘッダーからバージョン番号を取得できませんでした（取得値: '${version}'）"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          if [ -n "$(git ls-remote --tags origin "refs/tags/${version}")" ]; then
+            echo "::notice::バージョン ${version} はリリース済みのため、リリース作成をスキップします"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      #yarnでのscriptの実施
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+      #nodeのセットアップ
+      - name: Setup Node.js
+        if: steps.get_version.outputs.skip == 'false'
+        uses: actions/setup-node@v7
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 24
+
+      #npmでのscriptの実施
       - name: Install Dependencies
-        run: yarn install --prefer-offline
+        if: steps.get_version.outputs.skip == 'false'
+        run: npm ci
       - name: scss build
-        run: yarn build
+        if: steps.get_version.outputs.skip == 'false'
+        run: npm run build
 
-      #composerの実施
+      #composerの実施（配布用のため開発用パッケージは含めない）
       - name: Composer install
-        uses: docker://composer:1.9.1
+        if: steps.get_version.outputs.skip == 'false'
+        uses: docker://composer:2
         with:
-          args: install
+          args: install --no-dev --no-interaction --optimize-autoloader
 
-      # release作成
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.event.pull_request.title }}
-          release_name: ${{ github.event.pull_request.title }}
-          body: ${{ github.event.pull_request.body }}
-          draft: false
-          prerelease: false
-
-      # release用のzip作成 https://github.com/marketplace/actions/zip-release
+      # release用のzip作成（プラグインの動作に必要なファイルのみ含める）
       - name: Zip Release
-        uses: TheDoctor0/zip-release@0.4.1
-        with:
-          filename: 'ruijinen-debug-helper.zip' # ファイル名
-          exclusions: '*.git* /*node_modules/* .editorconfig /*src/*scss/*' # 除外設定
-          directory: '.'
-          path: '.'
-          type: 'zip'
+        if: steps.get_version.outputs.skip == 'false'
+        run: zip -r ruijinen-debug-helper.zip ruijinen-debug-helper.php README.md App dist vendor -x 'App/Debug/error_log'
 
-      # releaseにzipファイルを添付
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
+      # release作成とzipファイルの添付
+      - name: Create Release
+        if: steps.get_version.outputs.skip == 'false'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./ruijinen-debug-helper.zip
-          asset_name: ruijinen-debug-helper.zip
-          asset_content_type: application/zip
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.get_version.outputs.version }}
+          RELEASE_NOTES: ${{ github.event.pull_request.body }}
+        run: |
+          notes_file="$(mktemp)"
+          printf '%s\n' "$RELEASE_NOTES" > "$notes_file"
+          gh release create "$VERSION" ruijinen-debug-helper.zip \
+            --title "$VERSION" \
+            --notes-file "$notes_file" \
+            --target "$GITHUB_SHA"
 
-      # mainからdevにPR生成
-      - name: create-pull-request
-        uses: repo-sync/pull-request@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          destination_branch: 'dev'
-          pr_title: "リリース残処理：mainの内容をdevへ反映"
-          pr_body: "Pulling main into dev"
-          pr_allow_empty: true
+      # mainからdevにPR生成（同期用のPRが既にある場合は作成しない）
+      - name: Create a pull request from main to dev
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh pr list --base dev --head main --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "::notice::mainからdevへのPR #${existing} が既にあるため作成をスキップします"
+            exit 0
+          fi
+          ahead_by=$(gh api "repos/${GITHUB_REPOSITORY}/compare/dev...main" --jq .ahead_by)
+          if [ "$ahead_by" = "0" ]; then
+            echo "::notice::mainにdevへ反映するコミットがないため作成をスキップします"
+            exit 0
+          fi
+          gh pr create --base dev --head main \
+            --title "リリース残処理：mainの内容をdevへ反映" \
+            --body "Pulling main into dev"
